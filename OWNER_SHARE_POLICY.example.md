@@ -7,7 +7,7 @@ Copy to `OWNER_SHARE_POLICY.md` beside your live bridge (or keep only in Grok me
 
 List topics the owner explicitly said the bot may answer publicly without waiting:
 
-1. Example: Child extracurricular **names only**: Piano, Gymnastics, Sewing, Dance (no times, locations, or teachers).
+1. Example: Kids' activity **names only** (e.g. "music lessons", "soccer"), with no times, locations, or teachers.
 2. Example: Public bot/role/setup facts about what the bot does.
 
 ## Always hold (ask the owner first)

@@ -7,9 +7,13 @@ Always-on Socket Mode bridge template: Slack events → POST to a Grok inbound w
 | Host | Use | Why |
 | --- | --- | --- |
 | Always on and always awake (VPS, server, a desktop that never sleeps) | Socket Mode bridge (`index.js`, this folder) | Simple, no public URL needed |
-| Sleeps or freezes when idle (for example a Grok Bot computer) | [`cloudflare-relay/`](./cloudflare-relay/README.md): HTTP Events API through an always-on Worker | Socket Mode can't hear anything while the host is frozen, and Slack doesn't replay those events |
+| Sleeps or freezes when idle (for example a Grok Bot computer) | HTTP Events API through an always-on relay: [`cloudflare-relay/`](./cloudflare-relay/README.md) (Cloudflare Worker) or [`node-http-relay/`](./node-http-relay/README.md) (plain Node: Fly.io, Railway, Render, Cloud Run, any VPS) | Socket Mode can't hear anything while the host is frozen, and Slack doesn't replay those events |
 
 Both send the same webhook payload, so the Grok routine is the same either way. See [Lessons learned](#lessons-learned-running-it-for-real).
+
+**No Cloudflare?** You don't need it. See [`HOSTING.md`](./HOSTING.md) for the full decision tree: Socket Mode on any always-awake host, the same relay on Fly.io / Railway / Render / Cloud Run / a VPS via [`node-http-relay/`](./node-http-relay/README.md), adapters for Lambda / Cloud Functions / Azure Functions / Deno Deploy, the built-in Grok Bot Slack trigger, and when tunnels are (and aren't) OK.
+
+**Does it work with Muse?** No. It targets Grok Bot's routine webhook (`Authorization: Bearer` inbound webhook). Meta's Muse agent has no documented equivalent wake webhook, and OpenAI's Dots isn't this shape either. Details in [`HOSTING.md`](./HOSTING.md#does-this-work-with-muse-or-other-agents).
 
 **Target Slack workspace:** your own (tokens and webhook are always per-bot).
 
@@ -101,7 +105,7 @@ How it fits together:
 
 After [Update Grok Bot's Computer](grokbot://app/v1/settings?id=update-computer), `/workspace` and `.env` usually survive, but `node_modules` may need `npm install`. The ensure routine reinstalls when missing and starts the bridge.
 
-**Socket Mode does not replay missed events.** After restart, smoke-test with an `@mention`. Prefer short keep-alive intervals (`ensure-running`). If the host sleeps when idle, keep-alives and watchdogs can't close the gap. Use [`cloudflare-relay/`](./cloudflare-relay/README.md) instead.
+**Socket Mode does not replay missed events.** After restart, smoke-test with an `@mention`. Prefer short keep-alive intervals (`ensure-running`). If the host sleeps when idle, keep-alives and watchdogs can't close the gap. Use an HTTP relay instead: [`cloudflare-relay/`](./cloudflare-relay/README.md) or [`node-http-relay/`](./node-http-relay/README.md) (see [`HOSTING.md`](./HOSTING.md)).
 
 Do not leave `npm start` in a foreground desktop terminal; closing that session kills Socket Mode.
 
@@ -133,6 +137,7 @@ Invite the bot into channels with `/invite @YourBotDisplayName`.
 - Collect `xoxb` then `xapp` via **secret-request** only — never paste tokens in chat, never open them in vim/nano for the session log
 - Never commit `.env`, `bridge.pid`, `bridge.child.pid`, `bridge.log`, or `node_modules` (see `.gitignore`)
 - Relay: secrets live in Cloudflare (`wrangler secret put`). The real `wrangler.toml` is git-ignored. Commit only `wrangler.toml.example`
+- Node relay: secrets live in your host's secret store (Fly secrets, Railway/Render variables, Cloud Run Secret Manager) or a git-ignored `.env`
 
 ## Owner share allowlist (Grok-managed)
 
@@ -190,11 +195,11 @@ Each workspace/app maintains its **own** allowlist; ask the other owner to allow
 
 ## Lessons learned (running it for real)
 
-Notes from running this bridge on a Grok Bot computer for a small office workspace.
+Notes from running this bridge on a Grok Bot computer in a real workspace.
 
 **Socket Mode needs an always-on, always-awake host.** Socket Mode is a websocket the bridge keeps open. A Grok Bot computer is paused or frozen when idle, during the day for 5 to 20 minutes several times an hour, and overnight for hours. While it's frozen, nothing runs: not node, not the watchdog, not cron-style routines. The socket dies, `ping/pong` timeout warnings pile up when it thaws, and every event Slack sent in the meantime is lost, because **Slack does not replay Socket Mode events**. No watchdog or keep-alive *on the frozen host* can fix that. It can only shorten recovery after the host wakes.
 
-**For hosts that sleep, use the HTTP Events API through an always-on relay.** [`cloudflare-relay/`](./cloudflare-relay/README.md) is a small Cloudflare Worker (free plan is fine) that Slack can always reach. It verifies Slack's signature and forwards each event to the Grok routine webhook, which wakes the bot. Turn on **Delayed Events** in Event Subscriptions too: if a delivery fails, Slack retries it for up to 24 hours instead of dropping it.
+**For hosts that sleep, use the HTTP Events API through an always-on relay.** [`cloudflare-relay/`](./cloudflare-relay/README.md) is a small Cloudflare Worker (free plan is fine) that Slack can always reach; [`node-http-relay/`](./node-http-relay/README.md) runs the same code as a plain Node server if you'd rather not use Cloudflare. It verifies Slack's signature and forwards each event to the Grok routine webhook, which wakes the bot. Turn on **Delayed Events** in Event Subscriptions too: if a delivery fails, Slack retries it for up to 24 hours instead of dropping it.
 
 **Why not point Slack straight at the Grok routine webhook?** Two blockers:
 1. Slack verifies a Request URL by sending a `url_verification` challenge and expecting it echoed back. The routine webhook only answers "received".

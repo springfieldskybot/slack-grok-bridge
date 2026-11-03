@@ -9,6 +9,8 @@ connection is dead and Slack does **not** replay events sent in that window. The
 up, so Slack always has somewhere to deliver. The Grok routine is woken by the webhook and replies
 with the bot token. See "Lessons learned" in the top-level README for the full story.
 
+**No Cloudflare account?** [`../node-http-relay/`](../node-http-relay/README.md) runs this same module as a plain Node server (Fly.io, Railway, Render, Cloud Run, any VPS). See [`../HOSTING.md`](../HOSTING.md).
+
 ```
 Slack ──HTTPS (signed)──▶ Worker (always on) ──POST + key──▶ Grok routine webhook ──▶ reply via bot token
 ```

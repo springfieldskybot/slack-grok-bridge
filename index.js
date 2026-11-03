@@ -156,7 +156,7 @@ const PERSONAL_NAMES = String(process.env.PERSONAL_NAMES || "")
   .map(escapeRegex);
 const PERSONAL_BASE_TERMS = [
   "kids?", "child", "daughter", "son", "family", "school", "calendar",
-  "schedule", "class(?:es)?", "piano", "sewing", "gymnastics", "art class",
+  "schedule", "class(?:es)?", "lessons?", "practice", "activit(?:y|ies)", "sports?",
   "pickup", "carpool", "address", "home", "phone", "email",
   "where (?:is|are)", "what time", "taking",
 ];

@@ -232,7 +232,7 @@ tail -n 30 bridge.log
 
 `./start.sh` refuses to start if required env keys are empty. Do **not** leave `npm start` in a foreground desktop terminal. Use `start.sh`: it runs node under `supervise.sh` (nohup + `bridge.pid` = supervisor, `bridge.child.pid` = node, `bridge.log`). The built-in connection watchdog exits node when the socket stays unhealthy for 2 minutes, and the supervisor restarts it.
 
-**If this computer sleeps or freezes when idle** (Grok Bot computers do), Socket Mode will miss messages no matter how the keep-alive is tuned. Set up [`cloudflare-relay/`](./cloudflare-relay/README.md) instead, or as well, and switch the Slack app to HTTP delivery. See README → Lessons learned.
+**If this computer sleeps or freezes when idle** (Grok Bot computers do), Socket Mode will miss messages no matter how the keep-alive is tuned. Set up an HTTP relay instead, or as well: [`cloudflare-relay/`](./cloudflare-relay/README.md) (Cloudflare) or [`node-http-relay/`](./node-http-relay/README.md) (any Node host), and switch the Slack app to HTTP delivery. See [`HOSTING.md`](./HOSTING.md). See README → Lessons learned.
 
 ---
 
